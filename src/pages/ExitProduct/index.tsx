@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 import { Focus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProduct } from "@/hooks/useProduct";
@@ -45,18 +45,21 @@ export const ExitProduct = () => {
   });
 
   // ================= QR CODE =================
-  useEffect(() => {
-    if (!scanning) return;
+useEffect(() => {
+  if (!scanning) return;
 
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: 250 },
-      false
-    );
+  const html5QrCode = new Html5Qrcode("reader");
 
-    scanner.render(
+  html5QrCode
+    .start(
+      { facingMode: "environment" }, // câmera traseira
+      {
+        fps: 10,
+        qrbox: 250,
+      },
       async (decodedText) => {
-        scanner.clear();
+        await html5QrCode.stop();
+        html5QrCode.clear();
         setScanning(false);
 
         try {
@@ -66,13 +69,20 @@ export const ExitProduct = () => {
           alert("Item não encontrado");
         }
       },
-      () => {}
-    );
+      (error) => {
+        console.error("QR Code error:", error);
+      }
+    )
+    .catch(() => {
+      alert("Não foi possível acessar a câmera");
+      setScanning(false);
+    });
 
-    return () => {
-      scanner.clear().catch(() => {});
-    };
-  }, [scanning]);
+  return () => {
+    html5QrCode.stop().catch(() => {});
+  };
+}, [scanning]);
+
 
   // ================= SUBMIT =================
   const onSubmit = async (data: z.infer<typeof exitSchema>) => {
